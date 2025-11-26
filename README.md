@@ -1,5 +1,5 @@
-__Сравнение Feature Importance в sklearn и R__
-__Описание проекта__
+##__Сравнение Feature Importance в sklearn и R__
+##__Описание проекта__
 Экспериментальное сравнение методов оценки важности признаков (Feature Importance) в реализациях Random Forest для Python (sklearn) и R (randomForest, ranger). Исследование проводилось на различных сценариях данных.
 __Эксперименты__
 __Сценарии данных__
