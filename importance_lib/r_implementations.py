@@ -17,7 +17,7 @@ def clean_feature_names(names):
     return cleaned_names
 
 
-def r_randomforest_importance(X, y, data_path=None, n_estimators=1760, max_depth=26, min_samples_leaf=5, max_features='sqrt'):
+def r_randomforest_importance(X, y, data_path=None, n_estimators=100, max_depth=None, min_samples_leaf=1, max_features='sqrt'):
     try:
         base = importr('base')
         utils = importr('utils')
@@ -45,12 +45,17 @@ def r_randomforest_importance(X, y, data_path=None, n_estimators=1760, max_depth
         else:
             max_features = round(n_features * max_features)
 
+        if max_depth is None:
+            maxnodes = robjects.NULL
+        else:
+            maxnodes=2**max_depth
+
         rf_result = randomForest.randomForest(
             formula,
             data=r_df,
             ntree=n_estimators,
             nodesize=min_samples_leaf,
-            maxnodes=2**max_depth,
+            maxnodes=maxnodes,
             mtry=max_features,
             importance=True
         )
@@ -84,7 +89,7 @@ def r_randomforest_importance(X, y, data_path=None, n_estimators=1760, max_depth
         return None
 
 
-def r_ranger_importance_air(X, y, n_estimators=1760, max_depth=26, min_samples_leaf=5, max_features='sqrt'):
+def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_leaf=1, max_features='sqrt'):
     try:
         base = importr('base')
         ranger = importr('ranger')
@@ -128,6 +133,9 @@ def r_ranger_importance_air(X, y, n_estimators=1760, max_depth=26, min_samples_l
             mtry_val = round(n_features * max_features)
         else:
             mtry_val = max_features
+
+        if max_depth is None:
+            max_depth = robjects.NULL
 
         rf_result = ranger.ranger(
             formula,
