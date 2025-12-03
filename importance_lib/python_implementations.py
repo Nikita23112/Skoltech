@@ -7,7 +7,7 @@ from sklearn.metrics import accuracy_score
 
 def objective_classifier(trial, X_train, y_train):
     n_estimators = trial.suggest_int('n_estimators', 50, 2000)
-    max_depth = trial.suggest_int('max_depth', 5, 30, log=True)
+    max_depth = trial.suggest_int('max_depth', 1, 30, log=True)
     min_samples_leaf = trial.suggest_int('min_samples_leaf', 1, 40)
     max_features = trial.suggest_categorical(
         'max_features', ["sqrt", 0.25, 1/3, 0.5, 0.7, 1.0])
@@ -43,4 +43,4 @@ def sklearn_importance(X_train, y_train):
     print(best_params)
     rf.fit(X_train, y_train)
     fi = pd.Series(rf.feature_importances_, index=X_train.columns)
-    return fi.sort_values(ascending=False)
+    return fi.sort_values(ascending=False), rf, study
