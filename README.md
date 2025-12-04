@@ -1,4 +1,3 @@
-````markdown
 #  `feature-importance-comparison`
 
 Утилиты и эксперименты для сравнения методов вычисления **Важности Признаков (Feature Importance - FI)** в моделях **Random Forest** с использованием различных инструментов:
