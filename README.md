@@ -15,31 +15,20 @@
 
 | Путь | Описание |
 | :--- | :--- |
-| `src/feature_importance_pkg/__init__.py` | Главный файл пакета, определяющий публичный API и управляющий импортом основных функций. |
-| `src/feature_importance_pkg/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
-| `src/feature_importance_pkg/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`** и **`ranger`** через **`rpy2`**. |
-| `src/feature_importance_pkg/pic.py` | Содержит функции для **визуализации** (построения сравнительных графиков) важности признаков. |
-| `requirements.txt` | Список зависимостей Python. |
+| `importance_lib/__init__.py` | Главный файл пакета, определяющий публичный API и управляющий импортом основных функций. |
+| `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
+| `importance_lib/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`** и **`ranger`** через **`rpy2`**. |
+| `importance_lib/pic.py` | Содержит функции для **визуализации** (построения сравнительных графиков) важности признаков. |
+| `Random_forest.ipynb` | Блокнот с экспериментами. |
+| `all_feature_importances_combined.csv` | Файл в котором сохранены важности признаков во всех экспериментах. |
+| `rent.csv` | Датасет, который используется в экспериментах. |
+| `Отчет.pdf` | Файл, в котором указаны проблемы и результаты экспериментов. |
 
 ---
 
 ## Установка и Зависимости
 
 Для корректной работы всего функционала необходим **Python 3.x** и **R**.
-
-### Шаг 1: Клонирование и зависимости Python
-
-Клонируйте репозиторий и установите необходимые библиотеки Python.
-
-```bash
-# Клонирование репозитория
-git clone [https://github.com/Nikita23112/Skoltech.git](https://github.com/Nikita23112/Skoltech.git)
-cd Skoltech/
-
-# Установка зависимостей Python
-# Включает scikit-learn, optuna, pandas, numpy, rpy2 и др.
-pip install -r requirements.txt 
-````
 
 ### Шаг 2: Установка R-пакетов (Обязательно для функций R)
 
