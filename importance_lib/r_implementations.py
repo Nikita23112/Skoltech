@@ -27,7 +27,7 @@ def clean_feature_names(names):
     return cleaned_names
 
 
-def r_randomforest_importance(X, y, data_path=None, n_estimators=100, max_depth=None, min_samples_leaf=1, max_features='sqrt'):
+def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_samples_leaf=1, max_features='sqrt'):
     """
     Вычисляет важность признаков с помощью пакета 'randomForest' в R через rpy2.
     Использует метрику Importance, тип 2 (%IncMSE).
@@ -35,7 +35,6 @@ def r_randomforest_importance(X, y, data_path=None, n_estimators=100, max_depth=
     Args:
         X (pd.DataFrame): Обучающий набор данных (признаки).
         y (pd.Series): Метки обучающего набора данных (целевая переменная).
-        data_path (str, optional): Не используется в этой реализации, но оставлен для совместимости.
         n_estimators (int): Количество деревьев ('ntree'). По умолчанию 100.
         max_depth (int, optional): Максимальная глубина дерева. Если None, R использует ограничение maxnodes=NULL.
         min_samples_leaf (int): Минимальное количество выборок в листе ('nodesize'). По умолчанию 1.
