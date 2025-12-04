@@ -30,7 +30,7 @@
 
 Для корректной работы всего функционала необходим **Python 3.x** и **R**.
 
-### Шаг 2: Установка R-пакетов (Обязательно для функций R)
+### Установка R-пакетов (Обязательно для функций R)
 
 Для функций, использующих `rpy2`, необходимо, чтобы в вашей R-среде были установлены пакеты: `randomForest` и `ranger`.
 
@@ -44,14 +44,14 @@ install.packages(c("randomForest", "ranger"))
 
 ## Функции и Примеры использования (API)
 
-Весь функционал доступен для импорта из пакета `feature_importance_pkg`.
+Весь функционал доступен для импорта из пакета `importance_lib`.
 
 ### 1\) Python/Scikit-learn + Optuna (HPO и FI)
 
 Функция выполняет оптимизацию гиперпараметров (**HPO**) для `RandomForestClassifier` с помощью **Optuna** и возвращает важность признаков (**FI**) из лучшей модели.
 
 ```python
-from feature_importance_pkg import sklearn_importance
+from importance_lib.python_implementations import sklearn_importance
 
 # Предполагаем, что X_train и y_train — это pd.DataFrame и pd.Series
 # X_train: признаки, y_train: целевая переменная
@@ -74,7 +74,7 @@ print("Топ-5 важных признаков (Scikit-learn):\n", fi_sklearn.h
 Использует традиционную реализацию **`randomForest`** в R.
 
 ```python
-from feature_importance_pkg import r_randomforest_importance
+from importance_lib.r_implementations import r_randomforest_importance
 
 fi_r_rf = r_randomforest_importance(
     X, y, 
@@ -89,7 +89,7 @@ print("Важность признаков (%IncMSE) из R (randomForest):\n", 
 Использует быструю реализацию **`ranger`**. Настроена для **классификации** и использует метрику `impurity_corrected`.
 
 ```python
-from feature_importance_pkg import r_ranger_importance_air
+from importance_lib.r_implementations import r_ranger_importance_air
 
 # Важно: целевая переменная 'y' будет преобразована в R-фактор
 fi_r_ranger = r_ranger_importance_air(
@@ -105,7 +105,7 @@ print("Важность признаков (impurity_corrected) из R (ranger):
 Используйте функцию `picture` для создания сравнительных графиков важности признаков из разных реализаций.
 
 ```python
-from feature_importance_pkg import picture
+from importance_lib.pic import picture
 
 # Список или словарь с результатами FI
 importance_data = [fi_sklearn, fi_r_rf, fi_r_ranger]
