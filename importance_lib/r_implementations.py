@@ -16,10 +16,10 @@ def clean_feature_names(names):
     Заменяет символы '.', '-', ' ' на нижнее подчеркивание '_', так как R
     автоматически преобразует эти символы при работе с формулами.
 
-    Аргументы:
+    Args:
         names (list or pd.Index): Список или индекс имен признаков.
 
-    Возвращает:
+    Return:
         list: Список "очищенных" имен признаков.
     """
     cleaned_names = [name.replace('.', '_').replace(
@@ -32,7 +32,7 @@ def r_randomforest_importance(X, y, data_path=None, n_estimators=100, max_depth=
     Вычисляет важность признаков с помощью пакета 'randomForest' в R через rpy2.
     Использует метрику Importance, тип 2 (%IncMSE).
 
-    Аргументы:
+    Args:
         X (pd.DataFrame): Обучающий набор данных (признаки).
         y (pd.Series): Метки обучающего набора данных (целевая переменная).
         data_path (str, optional): Не используется в этой реализации, но оставлен для совместимости.
@@ -42,7 +42,7 @@ def r_randomforest_importance(X, y, data_path=None, n_estimators=100, max_depth=
         max_features (str or float): Количество признаков для рассмотрения при каждом разбиении ('mtry').
                                      Может быть 'sqrt' или float (доля признаков).
                                      
-    Возвращает:
+    Return:
         pd.Series or None: Важность признаков, отсортированная по убыванию, или None в случае ошибки.
     """
     try:
@@ -129,7 +129,7 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
     'ranger' является более быстрой реализацией Random Forest, особенно подходящей для классификации.
     Использует метрику 'impurity_corrected' для важности.
 
-    Аргументы:
+    Args:
         X (pd.DataFrame): Обучающий набор данных (признаки).
         y (pd.Series): Метки обучающего набора данных (целевая переменная).
         n_estimators (int): Количество деревьев ('num.trees'). По умолчанию 100.
@@ -138,7 +138,7 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
         max_features (str or float): Количество признаков для рассмотрения при каждом разбиении ('mtry').
                                      Может быть 'sqrt', float (доля признаков) или int.
                                      
-    Возвращает:
+    Return:
         pd.Series or None: Важность признаков, отсортированная по убыванию, или None в случае ошибки.
     """
     try:
