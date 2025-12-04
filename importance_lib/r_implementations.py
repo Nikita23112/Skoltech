@@ -40,7 +40,7 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
         min_samples_leaf (int): Минимальное количество выборок в листе ('nodesize'). По умолчанию 1.
         max_features (str or float): Количество признаков для рассмотрения при каждом разбиении ('mtry').
                                      Может быть 'sqrt' или float (доля признаков).
-                                     
+
     Return:
         pd.Series or None: Важность признаков, отсортированная по убыванию, или None в случае ошибки.
     """
@@ -48,7 +48,7 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
         # Импорт необходимых R-пакетов
         base = importr('base')
         utils = importr('utils')
-        randomForest = importr('randomForest') # Пакет Random Forest в R
+        randomForest = importr('randomForest')  # Пакет Random Forest в R
 
         original_features = list(X.columns)
         cleaned_features = clean_feature_names(original_features)
@@ -77,9 +77,9 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
 
         # Установка ограничения глубины ('maxnodes')
         if max_depth is None:
-            maxnodes = robjects.NULL # Эквивалент NULL в R
+            maxnodes = robjects.NULL  # Эквивалент NULL в R
         else:
-            maxnodes=2**max_depth # Преобразование max_depth в maxnodes
+            maxnodes = 2**max_depth  # Преобразование max_depth в maxnodes
 
         # Обучение модели Random Forest в R
         rf_result = randomForest.randomForest(
@@ -87,7 +87,8 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
             data=r_df,
             ntree=n_estimators,         # Количество деревьев
             nodesize=min_samples_leaf,  # Минимальный размер листа
-            maxnodes=maxnodes,          # Максимальное количество узлов (для ограничения глубины)
+            # Максимальное количество узлов (для ограничения глубины)
+            maxnodes=maxnodes,
             mtry=max_features,          # Количество признаков для выбора при разбиении
             importance=True             # Запрашиваем расчет важности
         )
@@ -100,7 +101,7 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
         feature_names_r = list(robjects.r['rownames'](importance_r))
 
         print(f"Importance matrix shape: {importance_matrix.shape}")
-        
+
         # Извлечение только первого столбца (обычно %IncMSE)
         if importance_matrix.ndim == 2:
             importance_values = importance_matrix[:, 0]
@@ -112,7 +113,7 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
             importance_values, index=original_features)
 
         print("Successfully computed variable importance")
-        
+
         return importance_series.sort_values(ascending=False)
 
     except Exception as e:
@@ -136,14 +137,14 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
         min_samples_leaf (int): Минимальное количество выборок в листе ('min.node.size'). По умолчанию 1.
         max_features (str or float): Количество признаков для рассмотрения при каждом разбиении ('mtry').
                                      Может быть 'sqrt', float (доля признаков) или int.
-                                     
+
     Return:
         pd.Series or None: Важность признаков, отсортированная по убыванию, или None в случае ошибки.
     """
     try:
         # Импорт необходимых R-пакетов
         base = importr('base')
-        ranger = importr('ranger') # Пакет Ranger в R
+        ranger = importr('ranger')  # Пакет Ranger в R
 
         original_features = list(X.columns)
 
@@ -152,7 +153,7 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
         # Подготовка данных: очистка имен столбцов и добавление целевой переменной
         df_for_r = X.copy()
         df_for_r.columns = cleaned_features
-        # Целевую переменную конвертируем в строковый тип для ranger, 
+        # Целевую переменную конвертируем в строковый тип для ranger,
         # чтобы она была интерпретирована как фактор (для классификации)
         df_for_r['target'] = y.astype(str).values
 
@@ -165,21 +166,22 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
 
         # Приведение целевой переменной к типу 'factor' в R (обязательно для классификации)
         r_target = base.factor(r_df.rx2('target'))
-        
+
         # Извлечение только признаков и повторное объединение с 'factor' таргетом
         r_cleaned_features = StrVector(cleaned_features)
         r_df_features_only = r_df.rx(True, r_cleaned_features)
-        r_df = base.cbind(r_df_features_only, target=r_target) # target ~ . (формула)
+        # target ~ . (формула)
+        r_df = base.cbind(r_df_features_only, target=r_target)
 
         # Создание формулы для R
         formula_str = "target ~ " + " + ".join(cleaned_features)
         formula = robjects.Formula(formula_str)
 
         print(f"Training R Ranger Forest with formula: {formula_str}")
-        
+
         # Проверка типа целевой переменной в R (для отладки)
         target_type = robjects.r['class'](r_df.rx2('target'))
-        
+
         n_features = len(cleaned_features)
         # Расчет параметра mtry (количество признаков для случайного выбора)
         if max_features == 'sqrt':
@@ -198,11 +200,13 @@ def r_ranger_importance_air(X, y, n_estimators=100, max_depth=None, min_samples_
             formula,
             data=r_df,
             num_trees=n_estimators,         # Количество деревьев
-            min_node_size=min_samples_leaf, # Минимальный размер листа
+            min_node_size=min_samples_leaf,  # Минимальный размер листа
             mtry=mtry_val,                  # Количество признаков для выбора при разбиении
-            importance="impurity_corrected",# Метрика важности: скорректированная нечистота Джини
+            # Метрика важности: скорректированная нечистота Джини
+            importance="impurity_corrected",
             max_depth=max_depth,            # Максимальная глубина
-            classification=True             # Указание типа задачи (классификация)
+            # Указание типа задачи (классификация)
+            classification=True
         )
 
         # Извлечение результатов важности признаков
