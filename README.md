@@ -2,7 +2,8 @@
 
 Утилиты и эксперименты для сравнения методов вычисления **Важности Признаков (Feature Importance - FI)** в моделях **Random Forest** с использованием различных инструментов:
 1.  **Scikit-learn** (Python) с оптимизацией гиперпараметров через **Optuna**.
-2.  **R** (через `rpy2`) с пакетами **`randomForest`** и **`ranger`**.
+2.  **rfpimp** (Python).
+3.  **R** (через `rpy2`) с пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`**.
 
 ---
 
@@ -11,8 +12,8 @@
 | Путь | Описание |
 | :--- | :--- |
 | `importance_lib/__init__.py` | Главный файл пакета, определяющий публичный API. |
-| `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
-| `importance_lib/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`** и **`ranger`** через **`rpy2`**. |
+| `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`**, **`rfpimp`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
+| `importance_lib/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`** через **`rpy2`**. |
 | `importance_lib/pic.py` | Содержит функции для **визуализации** (построения сравнительных графиков) важности признаков. |
 | `Random_forest.ipynb` | Блокнот с основными экспериментами и демонстрацией кода. |
 | `all_feature_importances_combined.csv` | Файл с сохраненными результатами важности признаков из всех экспериментов. |
@@ -41,15 +42,15 @@ install.packages(c("randomForest", "ranger"))
 
 Весь функционал доступен для импорта из пакета `importance_lib`.
 
-### 1\) Python/Scikit-learn + Optuna (HPO и FI)
+### 1\) Python/Scikit-learn + Python/rfpimp + Optuna (HPO и FI)
 
-Функция `sklearn_importance` выполняет оптимизацию гиперпараметров (**HPO**) для `RandomForestClassifier` с помощью **Optuna** и возвращает важность признаков (**FI**) из лучшей модели.
+Функция `sklearn_importance` выполняет оптимизацию гиперпараметров (**HPO**) для `RandomForestClassifier` с помощью **Optuna** и возвращает важности признаков (**FI**) из лучшей модели в реализации библиотеки **Scikit-learn** и **rfpimp**.
 
 ```python
 from importance_lib.python_implementations import sklearn_importance
 
 # X_train: признаки (pd.DataFrame), y_train: целевая переменная (pd.Series)
-fi_sklearn, model, study = sklearn_importance(X_train, y_train)
+fi_sklearn, _, model, study = sklearn_importance(X_train, y_train)
 
 print("Лучшие параметры:", study.best_params)
 print("Топ-5 важных признаков (Scikit-learn):\n", fi_sklearn.head())
@@ -57,7 +58,7 @@ print("Топ-5 важных признаков (Scikit-learn):\n", fi_sklearn.h
 
 | Функция | Основное назначение | Возвращает |
 | :--- | :--- | :--- |
-| `sklearn_importance` | HPO и расчет FI (использует OOB-оценку). | Кортеж: отсортированная FI (`pd.Series`), обученная модель (`RandomForestClassifier`), объект `Optuna Study`. |
+| `sklearn_importance` | HPO и расчет FI (использует OOB-оценку). | Кортеж: отсортированная FI (`pd.Series`) из реализации **Scikit-learn**,  отсортированная FI (`pd.Series`) из реализации **rfpimp**, обученная модель (`RandomForestClassifier`), объект `Optuna Study`. |
 
 -----
 
