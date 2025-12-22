@@ -33,7 +33,7 @@
 Вы можете установить их в консоли R:
 
 ```r
-install.packages(c("randomForest", "ranger"))
+install.packages(c("randomForest", "ranger", "randomForestSRC", "party", "partykit"))
 ````
 
 ---
