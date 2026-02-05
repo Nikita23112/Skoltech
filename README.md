@@ -45,9 +45,9 @@ install.packages(c("randomForest", "ranger", "randomForestSRC", "party", "partyk
 
 Весь функционал доступен для импорта из пакета `importance_lib`.
 
-### 1\) Python/Scikit-learn + Python/rfpimp + Optuna (HPO и FI)
+### 1\) Python/Scikit-learn + Python/rfpimp + Python/treeinterpreter + Optuna (HPO и FI)
 
-Функция `sklearn_importance` выполняет оптимизацию гиперпараметров (**HPO**) для `RandomForestClassifier` с помощью **Optuna** и возвращает важности признаков (**FI**) из лучшей модели в реализации библиотеки **Scikit-learn** и **rfpimp**.
+Функция `sklearn_importance` выполняет оптимизацию гиперпараметров (**HPO**) для `RandomForestClassifier` с помощью **Optuna** и возвращает важности признаков (**FI**) из лучшей модели в реализации библиотеки **Scikit-learn**, **rfpimp**, **treeinterpreter**.
 
 ```python
 from importance_lib.python_implementations import sklearn_importance
