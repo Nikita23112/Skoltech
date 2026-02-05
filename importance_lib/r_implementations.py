@@ -41,8 +41,7 @@ def clean_feature_names(names):
 def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_samples_leaf=5, max_features='sqrt'):
     """
     Вычисляет важность признаков с помощью пакета 'randomForestSRC' в R через rpy2.
-    Использует метод MDI-OOB (Mean Decrease Impurity based on Out-Of-Bag samples).
-    Особенность: сначала обучает модель без расчета важности, затем вычисляет VIMP отдельно.
+    MDA (Mean Decrease Accuracy) - пермутационная важность на OOB-выборках (по умолчанию)
 
     Args:
         X (pd.DataFrame): Обучающий набор данных (признаки)
@@ -52,35 +51,30 @@ def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_sam
         min_samples_leaf (int): Минимальное количество выборок в листе (nodesize в R)
         max_features (str or float): Количество признаков для разбиения (mtry в R)
                                      'sqrt' или доля признаков (float)
-
     Returns:
         pd.Series or None: Важность признаков, отсортированная по убыванию
     """
     try:
         # --- Импорт R-пакетов ---
-        # randomForestSRC - пакет для survival, regression и classification forests
-        # base - базовые функции R
         randomForestSRC = importr('randomForestSRC')
         base = importr('base')
 
         # Определяем тип задачи: классификация или регрессия
-        # Проверяем по типу данных и количеству уникальных значений
         is_classification = pd.api.types.is_categorical_dtype(y) or \
             (y.nunique() <= 10 and y.dtype in ['int64', 'int32', 'object'])
 
         # Сохраняем оригинальные имена признаков
         original_features = list(X.columns)
-        # Очищаем имена для совместимости с R (удаляет спецсимволы и т.д.)
+        # Очищаем имена для совместимости с R
         cleaned_features = clean_feature_names(original_features)
 
         # --- Подготовка данных ---
-        # Создаем копию данных с очищенными именами признаков
         df_for_r = X.copy()
         df_for_r.columns = cleaned_features
 
-        # Обработка целевой переменной в зависимости от типа задачи
+        # Обработка целевой переменной
         if is_classification:
-            # Для классификации преобразуем в фактор (категориальную переменную) в R
+            # Для классификации преобразуем в фактор
             df_for_r['target'] = base.as_factor(
                 ro.vectors.StrVector(y.astype(str).values))
             print("Detected Classification Task. Target variable converted to R Factor.")
@@ -93,11 +87,11 @@ def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_sam
         with localconverter(ro.default_converter + pandas2ri_converter) as cv:
             r_df = ro.conversion.py2rpy(df_for_r)
 
-        # Создаем формулу для R: target ~ feature1 + feature2 + ...
+        # Создаем формулу для R
         formula_str = "target ~ " + " + ".join(cleaned_features)
         formula = Formula(formula_str)
 
-        # Расчет параметра mtry (количество признаков для случайного выбора)
+        # Расчет параметра mtry
         n_features = len(cleaned_features)
         if max_features == 'sqrt':
             mtry_val = round(np.sqrt(n_features))
@@ -106,36 +100,39 @@ def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_sam
         else:
             mtry_val = max_features
 
-        # Преобразование max_depth в nodedepth (специфичный для randomForestSRC параметр)
+        # Преобразование max_depth в nodedepth
         nodedepth_arg = int(max_depth) if max_depth is not None else -1
 
-        # --- 1. Обучение модели (importance="none") ---
-        # Сначала обучаем модель без расчета важности для оптимизации производительности
-        print(f"Training R Random Forest (rfsrc) with formula: {formula_str}")
+        # --- Обучение модели с расчетом важности ---
+        # MDA: Используем пермутационную важность на OOB-выборках
+        print(f"Training R Random Forest (rfsrc) with MDA importance...")
+        print(f"Formula: {formula_str}")
+
+        # Для MDA используем параметр importance="permute"
+        # Это вычисляет пермутационную важность (аналог MDA)
         rf_result = randomForestSRC.rfsrc(
             formula,
             data=r_df,
-            ntree=n_estimators,          # Количество деревьев
-            nodesize=min_samples_leaf,   # Минимальный размер узла
-            mtry=mtry_val,               # Количество признаков для разбиения
-            nodedepth=nodedepth_arg,     # Максимальная глубина
-            importance="none"            # Отключаем встроенный расчет важности
+            ntree=n_estimators,
+            nodesize=min_samples_leaf,
+            mtry=mtry_val,
+            nodedepth=nodedepth_arg,
+            importance="permute"  # Ключевое изменение: используем пермутационную важность
         )
 
-        # --- 2. Расчет MDI-OOB через vimp ---
-        # vimp() вычисляет Variable Importance на основе OOB-данных
-        # Это более точная оценка, чем стандартный MDI
-        print("Computing MDI-OOB importance via vimp()...")
-        importance_obj = randomForestSRC.vimp(rf_result)
-        importance_r = importance_obj.rx2(
-            'importance')  # Извлекаем значения важности
+        # Извлекаем значения пермутационной важности
+        # В randomForestSRC при importance="permute" используется алгоритм MDA
+        importance_r = rf_result.rx2('importance')
+
+        method_name = 'randomForestSRC_MDA'
+        print("Successfully computed MDA (permutation) importance")
 
         # Конвертация R-объекта в numpy array
         importance_values = np.array(importance_r)
 
-        # --- 3. Извлечение значений ---
+        # --- Обработка результатов для классификации ---
         # Для классификации randomForestSRC возвращает матрицу [признаки x классы]
-        # Последний столбец 'all' содержит общую важность для всех классов
+        # Последний столбец 'all' содержит общую важность
         if is_classification and len(importance_values.shape) > 1:
             # Берем последний столбец с итоговой важностью
             importance_values = importance_values[:, -1]
@@ -144,15 +141,14 @@ def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_sam
         importance_series = pd.Series(
             importance_values,
             index=original_features,
-            name='randomForestSRC_MDI_OOB'
+            name=method_name
         )
 
-        print("Successfully computed variable importance using randomForestSRC (MDI-OOB)")
         # Возвращаем отсортированные значения по убыванию важности
         return importance_series.sort_values(ascending=False)
 
     except Exception as e:
-        # Обработка ошибок с выводом предупреждения и трассировки
+        # Обработка ошибок
         warnings.warn(f"randomForestSRC R implementation failed: {e}")
         traceback.print_exc()
         return None
