@@ -3,7 +3,10 @@
 Утилиты и эксперименты для сравнения методов вычисления **Важности Признаков (Feature Importance - FI)** в моделях **Random Forest** с использованием различных инструментов:
 1.  **Scikit-learn** (Python) с оптимизацией гиперпараметров через **Optuna**.
 2.  **rfpimp** (Python).
-3.  **R** (через `rpy2`) с пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`**.
+3.  **treeinterpreter** (Python).
+4.  **ufi_importance_calculation** (Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker.
+    Специально для RandomForestClassifier из sklearn.)
+5.  **R** (через `rpy2`) с пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`**.
 
 ---
 
@@ -12,7 +15,7 @@
 | Путь | Описание |
 | :--- | :--- |
 | `importance_lib/__init__.py` | Главный файл пакета, определяющий публичный API. |
-| `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`**, **`rfpimp`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
+| `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`**, **`rfpimp`**, **`treeinterpreter`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
 | `importance_lib/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`** через **`rpy2`**. |
 | `importance_lib/pic.py` | Содержит функции для **визуализации** (построения сравнительных графиков) важности признаков. |
 | `Random_forest.ipynb` | Блокнот с основными экспериментами и демонстрацией кода. |
@@ -50,7 +53,7 @@ install.packages(c("randomForest", "ranger", "randomForestSRC", "party", "partyk
 from importance_lib.python_implementations import sklearn_importance
 
 # X_train: признаки (pd.DataFrame), y_train: целевая переменная (pd.Series)
-fi_sklearn, _, model, study = sklearn_importance(X_train, y_train)
+fi_sklearn, _, _, model, study = sklearn_importance(X_train, y_train)
 
 print("Лучшие параметры:", study.best_params)
 print("Топ-5 важных признаков (Scikit-learn):\n", fi_sklearn.head())
@@ -58,7 +61,7 @@ print("Топ-5 важных признаков (Scikit-learn):\n", fi_sklearn.h
 
 | Функция | Основное назначение | Возвращает |
 | :--- | :--- | :--- |
-| `sklearn_importance` | HPO и расчет FI (использует OOB-оценку). | Кортеж: отсортированная FI (`pd.Series`) из реализации **Scikit-learn**,  отсортированная FI (`pd.Series`) из реализации **rfpimp**, обученная модель (`RandomForestClassifier`), объект `Optuna Study`. |
+| `sklearn_importance` | HPO и расчет FI (использует OOB-оценку). | Кортеж: отсортированная FI (`pd.Series`) из реализации **Scikit-learn**,  отсортированная FI (`pd.Series`) из реализации **rfpimp**, отсортированная FI (`pd.Series`) из реализации **treeinterpreter**, обученная модель (`RandomForestClassifier`), объект `Optuna Study`. |
 
 -----
 
