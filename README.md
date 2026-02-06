@@ -4,7 +4,7 @@
 1.  **Scikit-learn** (Python) с оптимизацией гиперпараметров через **Optuna**.
 2.  **rfpimp** (Python).
 3.  **treeinterpreter** (Python).
-4.  **ufi_importance_calculation** (Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker.
+4.  **UFI** (Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker.
     Специально для RandomForestClassifier из sklearn.)
 5.  **R** (через `rpy2`) с пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`**.
 
@@ -16,6 +16,7 @@
 | :--- | :--- |
 | `importance_lib/__init__.py` | Главный файл пакета, определяющий публичный API. |
 | `importance_lib/python_implementations.py` | Содержит функции на Python с использованием **`sklearn`**, **`rfpimp`**, **`treeinterpreter`** и **`optuna`** для настройки гиперпараметров (HPO) и расчета FI. |
+| `importance_lib/UFI.py` | Содержит функцию **`cls`** для подсчета важности(Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker). |
 | `importance_lib/r_implementations.py` | Содержит функции для интеграции с R-пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`** через **`rpy2`**. |
 | `importance_lib/pic.py` | Содержит функции для **визуализации** (построения сравнительных графиков) важности признаков. |
 | `Random_forest.ipynb` | Блокнот с основными экспериментами и демонстрацией кода. |
