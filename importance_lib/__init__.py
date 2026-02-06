@@ -3,9 +3,7 @@ from .python_implementations import (
     # Функция для оптимизации гиперпараметров и получения важности признаков (реализация на Python/Scikit-learn)
     sklearn_importance,
     # Целевая функция Optuna для настройки гиперпараметров (часть sklearn_importance)
-    objective_classifier,
-    # Функция расчета важности признаков для unbiased feature importance (альтернативный метод)
-    ufi_importance_calculation
+    objective_classifier
 )
 
 # Импорт функций из модуля, содержащего реализации через R (с использованием rpy2)
@@ -30,6 +28,10 @@ from .pic import (
     picture
 )
 
+from .UFI import(
+    # Функция расчета важности признаков для unbiased feature importance (альтернативный метод)
+    cls
+)
 
 # Версия текущего пакета - используется для управления версиями и документации
 __version__ = "1.0.0"
@@ -48,5 +50,5 @@ __all__ = [
     'r_randomforestsrc_importance',        # R-реализация через randomForestSRC
     'r_partykit_importance',               # R-реализация через partykit
     # Альтернативный метод расчета важности признаков
-    'ufi_importance_calculation'
+    'cls'
 ]
