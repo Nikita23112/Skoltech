@@ -4,7 +4,7 @@
 1.  **Scikit-learn** (Python) с оптимизацией гиперпараметров через **Optuna**.
 2.  **rfpimp** (Python).
 3.  **treeinterpreter** (Python).
-4.  **UFI** (Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker.
+4.  **cls** (Реализация Unbiased Feature Importance (UFI/MDI-OOB) по статье Zhou & Hooker.
     Специально для RandomForestClassifier из sklearn.)
 5.  **R** (через `rpy2`) с пакетами **`randomForest`**, **`ranger`**, **`randomForestSRC`**, **`party`**, **`partykit`**.
 
