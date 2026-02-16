@@ -9,7 +9,7 @@ import numpy as np
 import warnings
 
 
-def objective_classifier(trial, X_train, y_train):
+def objective_classifier(trial, X_train, y_train, n_trees = 150):
     """
     Целевая функция для оптимизации гиперпараметров Optuna.
     Обучает RandomForestClassifier с предложенными параметрами и возвращает OOB-оценку.
@@ -23,7 +23,7 @@ def objective_classifier(trial, X_train, y_train):
         float: OOB-оценка (Out-of-Bag Score) обученной модели.
     """
     # Определение пространства поиска гиперпараметров
-    n_estimators = trial.suggest_int('n_estimators', 25, 150)
+    n_estimators = trial.suggest_int('n_estimators', 25, n_trees)
     max_depth = trial.suggest_int('max_depth', 1, 15, log=True)
     min_samples_leaf = trial.suggest_int('min_samples_leaf', 1, 20)
     max_features = trial.suggest_categorical(
@@ -45,7 +45,7 @@ def objective_classifier(trial, X_train, y_train):
     return model.oob_score_
 
 
-def sklearn_importance(X, y):
+def sklearn_importance(X, y, n_trees = 150):
     """
     Выполняет оптимизацию гиперпараметров с помощью Optuna, 
     обучает финальную модель с лучшими параметрами и вычисляет важность признаков.
@@ -68,7 +68,7 @@ def sklearn_importance(X, y):
 
     # Запуск оптимизации
     study.optimize(lambda trial: objective_classifier(
-        trial, X_train, y_train), n_trials=50)
+        trial, X_train, y_train, n_trees), n_trials=50)
 
     best_params = study.best_params
 
