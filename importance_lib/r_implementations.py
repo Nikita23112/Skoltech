@@ -1,3 +1,5 @@
+from rpy2.rinterface import NULL
+import rpy2.rinterface as rinterface
 from rpy2.robjects import pandas2ri, Formula
 from rpy2.robjects import pandas2ri, Formula, numpy2ri
 from rpy2.robjects.vectors import StrVector, IntVector, FactorVector
@@ -36,6 +38,174 @@ def clean_feature_names(names):
     cleaned_names = [name.replace('.', '_').replace(
         '-', '_').replace(' ', '_') for name in names]
     return cleaned_names
+
+
+def r_rfvarimpoob_importance_direct(X, y, n_estimators=100, max_depth=None, min_samples_leaf=5, max_features='sqrt'):
+    """
+    Вычисляет важность признаков с помощью пакета 'rfVarImpOOB' в R через rpy2.
+    Запускает R код напрямую, как в примере на GitHub.
+    """
+    import rpy2.robjects as robjects
+    from rpy2.robjects.packages import importr
+    from rpy2.robjects import pandas2ri
+    from rpy2.robjects.conversion import localconverter
+    from rpy2.rinterface_lib.embedded import RRuntimeError
+    import warnings
+    import traceback
+    import numpy as np
+    import pandas as pd
+
+    try:
+        # Импортируем R пакеты
+        randomForest = importr('randomForest')
+        rfVarImpOOB = importr('rfVarImpOOB')
+        base = importr('base')
+
+        # Сохраняем оригинальные имена признаков
+        original_features = list(X.columns)
+        cleaned_features = clean_feature_names(original_features)
+
+        # --- Подготовка данных ---
+        df_for_r = X.copy()
+        df_for_r.columns = cleaned_features
+
+        # Преобразуем y в фактор с строковыми метками (важно для R)
+        # R требует, чтобы категории были строками
+        if hasattr(y, 'cat') or isinstance(getattr(y, 'dtype', None), pd.CategoricalDtype):
+            y_values = y.astype(str).values
+        else:
+            y_values = y.astype(str).values
+
+        # Создаем фактор с строковыми метками
+        y_factor = pd.Categorical(y_values)
+        df_for_r['Survived'] = y_factor
+
+        # Конвертация в R DataFrame
+        with localconverter(robjects.default_converter + pandas2ri.converter) as cv:
+            r_df = robjects.conversion.py2rpy(df_for_r)
+
+        # Расчет mtry
+        n_features = len(cleaned_features)
+        if max_features == 'sqrt':
+            mtry_val = round(np.sqrt(n_features))
+        elif isinstance(max_features, float):
+            mtry_val = round(n_features * max_features)
+        else:
+            mtry_val = max_features
+
+        # Преобразование max_depth в maxnodes
+        if max_depth is not None:
+            maxnodes_val = 2 ** max_depth
+        else:
+            maxnodes_val = robjects.NULL
+        print('rfVarImpOOB:')
+        print(f"Formula: Survived ~ {', '.join(cleaned_features)}")
+        print(
+            f"Parameters: ntree={n_estimators}, mtry={mtry_val}, nodesize={min_samples_leaf}")
+        print(f"Data shape: {df_for_r.shape}")
+
+        # Запускаем R код напрямую
+        robjects.globalenv['r_df'] = r_df
+        robjects.globalenv['ntree_val'] = n_estimators
+        robjects.globalenv['mtry_val'] = mtry_val
+        robjects.globalenv['nodesize_val'] = min_samples_leaf
+        robjects.globalenv['maxnodes_val'] = maxnodes_val
+
+        # R код с обработкой числовых признаков
+        r_code = """
+        # Загружаем данные из Python
+        data2 <- r_df
+        
+        # Проверяем структуру данных
+        print("Структура данных:")
+        str(data2)
+        
+        # Убеждаемся, что все признаки числовые
+        # Если есть признаки не числовые, преобразуем их в факторы
+        for (col in names(data2)) {
+            if (col != "Survived" && !is.numeric(data2[[col]])) {
+                data2[[col]] <- as.factor(data2[[col]])
+                print(paste("Преобразован признак", col, "в фактор"))
+            }
+        }
+        
+        # Обучаем Random Forest
+        RF <- randomForest::randomForest(
+            Survived ~ .,
+            data = data2,
+            ntree = ntree_val,
+            importance = TRUE,
+            mtry = mtry_val,
+            nodesize = nodesize_val,
+            keep.inbag = TRUE
+        )
+        
+        # Преобразуем Survived в числовой формат (как в примере)
+        if (is.factor(data2$Survived)) {
+            data2$Survived <- as.numeric(data2$Survived) - 1
+        }
+        
+        # Вычисляем важность
+        VI_PMDI <- rfVarImpOOB::GiniImportanceForest(
+            RF, 
+            data2, 
+            score = "PMDI22", 
+            Predictor = mean
+        )
+        
+        # Возвращаем результат
+        VI_PMDI
+        """
+
+        # Выполняем R код
+        result = robjects.r(r_code)
+
+        # Извлекаем важность
+        importance_values = np.array(result.rx2('Gini_OOB'))
+        if importance_values.ndim > 1:
+            importance_values = importance_values.flatten()
+
+        # Получаем имена признаков
+        feature_names_r = list(robjects.r['rownames'](result))
+
+        print(f"Gini_OOB значения: {importance_values}")
+
+        # Если Gini_OOB нули, пробуем Gini_inbag
+        if np.all(importance_values == 0):
+            print("Gini_OOB нули, пробуем Gini_inbag...")
+            importance_inbag = np.array(result.rx2('Gini_inbag'))
+            if importance_inbag.ndim > 1:
+                importance_inbag = importance_inbag.flatten()
+            importance_values = importance_inbag
+            print(f"Gini_inbag значения: {importance_values}")
+
+        # Создаем Series
+        name_mapping = dict(zip(cleaned_features, original_features))
+        importance_dict = {}
+        for i, feat_r in enumerate(feature_names_r):
+            if i < len(importance_values):
+                if feat_r in name_mapping:
+                    importance_dict[name_mapping[feat_r]
+                                    ] = importance_values[i]
+                else:
+                    importance_dict[feat_r] = importance_values[i]
+
+        importance_series = pd.Series(
+            importance_dict, name='rfVarImpOOB_PMDI22')
+
+        print("\nИтоговая важность:")
+        print(importance_series)
+
+        return importance_series.sort_values(ascending=False)
+
+    except RRuntimeError as e:
+        warnings.warn(f"rfVarImpOOB R implementation failed with R error: {e}")
+        traceback.print_exc()
+        return None
+    except Exception as e:
+        warnings.warn(f"rfVarImpOOB R implementation failed: {e}")
+        traceback.print_exc()
+        return None
 
 
 def r_randomforestsrc_importance(X, y, n_estimators=100, max_depth=None, min_samples_leaf=5, max_features='sqrt'):
@@ -183,7 +353,14 @@ def r_randomforest_importance(X, y, n_estimators=100, max_depth=None, min_sample
         # Подготовка данных для передачи в R
         df_for_r = X.copy()
         df_for_r.columns = cleaned_features
-        df_for_r['target'] = y.values
+        # df_for_r['target'] = y.values
+        is_classification = y.nunique() <= 20 or y.dtype == 'object'
+
+        if is_classification:
+            df_for_r['target'] = base.as_factor(
+                ro.vectors.StrVector(y.astype(str).values))
+        else:
+            df_for_r['target'] = y.values
 
         # Конвертация DataFrame из Pandas (Python) в R DataFrame
         with robjects.conversion.localconverter(robjects.default_converter + pandas2ri.converter) as cv:

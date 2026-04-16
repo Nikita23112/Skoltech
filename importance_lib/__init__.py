@@ -19,7 +19,8 @@ from .r_implementations import (
     # Функция для получения важности признаков с использованием R-пакета 'randomForestSRC' (survival, regression, classification)
     r_randomforestsrc_importance,
     # Функция для получения важности признаков с использованием R-пакета 'partykit' (современная версия party)
-    r_partykit_importance
+    r_partykit_importance,
+    r_rfvarimpoob_importance_direct
 )
 
 # Импорт функции из модуля 'pic' (предположительно, модуль для визуализации - от "picture")
@@ -50,5 +51,6 @@ __all__ = [
     'r_randomforestsrc_importance',        # R-реализация через randomForestSRC
     'r_partykit_importance',               # R-реализация через partykit
     # Альтернативный метод расчета важности признаков
-    'cls'
+    'cls',
+    'r_rfvarimpoob_importance_direct'
 ]
