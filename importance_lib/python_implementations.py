@@ -27,7 +27,7 @@ def objective_classifier(trial, X_train, y_train, n_trees = 150):
     # Определение пространства поиска гиперпараметров
     n_estimators = trial.suggest_int('n_estimators', 25, n_trees)
     max_depth = trial.suggest_int('max_depth', 1, 15, log=True)
-    min_samples_leaf = trial.suggest_int('min_samples_leaf', 1, 20)
+    min_samples_leaf = trial.suggest_int('min_samples_leaf', 150, 400)
     max_features = trial.suggest_categorical(
         'max_features', ["sqrt", 0.25, 1/3, 0.5, 0.7, 1.0])
 
@@ -111,43 +111,34 @@ def sklearn_importance(X, y, n_trees = 150, shap_sample_size = 500):
     ti_series = pd.Series(mean_abs_contributions, index=X_train.columns)
     ti_series = ti_series.sort_values(ascending=False)
     
-    # 4. ИСПРАВЛЕННЫЙ SHAP для многоклассовой классификации
-    print("\n Вычисление SHAP важности для многоклассовой задачи...")
+    # --- ИСПРАВЛЕННЫЙ БЛОК SHAP ---
+    print("\n[SHAP] Запуск Permutation Explainer...")
+
+    # 1. Фоновые данные (обязательно для борьбы со смещением)
+    # Используем медиану или небольшую выборку
+    background = shap.maskers.Independent(X_train, max_samples=100)
     
-    # Берем подвыборку для ускорения
-    shap_sample = X_test.sample(min(shap_sample_size, len(X_test)), random_state=42)
-    #shap_sample = X_test.sample(len(X_test), random_state=42)
-    # Создаем explainer
-    explainer = shap.TreeExplainer(rf)
+    # 2. Выборка для объяснения
+    test_sample = X_test.sample(min(shap_sample_size, len(X_test)), random_state=42)
+
+    # 3. Явное создание Permutation Explainer
+    # Мы используем predict_proba, так как это классификация
+    explainer = shap.explainers.Permutation(rf.predict_proba, background, feature_names=X.columns)
     
-    # Получаем SHAP значения (для многоклассовой задачи это список из 3 массивов)
-    shap_values = explainer.shap_values(shap_sample)
-    
-    n_shap_features = shap_values[0].shape[1]
-    n_data_features = len(X_train.columns)
-    
-    print(f"Признаков в SHAP: {n_shap_features}")
-    print(f"Признаков в данных: {n_data_features}")
-    
-    # СПОСОБ 1: Усредняем абсолютные значения по всем классам
-    abs_shap_per_class = [np.abs(sv) for sv in shap_values]
-    mean_abs_shap = np.mean(abs_shap_per_class, axis=(0, 1))
-    
-    print(f"Форма mean_abs_shap: {mean_abs_shap.shape}")
-    
-    #  ИСПРАВЛЕНИЕ: Адаптивное создание Series
-    if n_shap_features >= n_data_features:
-        # SHAP вернул столько же или больше признаков
-        print(f" Используем первые {n_data_features} признаков из SHAP")
-        shap_series = pd.Series(mean_abs_shap[:n_data_features], 
-                               index=X_train.columns)
+    # 4. Расчет
+    # max_evals должен быть нечетным для Permutation (например, 2 * кол-во признаков * 10 + 1)
+    # Или просто достаточно большим числом, например, 1001
+    shap_values = explainer(test_sample, max_evals=1001)
+
+    # 5. Извлечение значений для положительного класса
+    if len(shap_values.shape) == 3:
+        actual_shap_values = shap_values.values[:, :, 1]
     else:
-        # SHAP вернул меньше признаков - дополняем нулями
-        print(f" SHAP вернул меньше признаков. Дополняем нулями...")
-        shap_series = pd.Series(index=X_train.columns, dtype=float)
-        shap_series.iloc[:n_shap_features] = mean_abs_shap
-        shap_series.iloc[n_shap_features:] = 0.0
-    
-    # Сортируем
-    shap_series = shap_series.sort_values(ascending=False)
+        actual_shap_values = shap_values.values
+
+    # 6. Итоговая серия
+    shap_series = pd.Series(
+        np.abs(actual_shap_values).mean(axis=0), 
+        index=X_train.columns
+    ).sort_values(ascending=False)
     return fi, imp_series, ti_series, shap_series, rf, study
